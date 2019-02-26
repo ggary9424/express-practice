@@ -3,6 +3,8 @@ const path = require('path');
 const uuid = require('uuid');
 const express = require('express');
 const bodyParser = require('body-parser');
+const { ObjectID } = require('mongoist');
+const { Users } = require('./collections');
 
 const app = express();
 
@@ -20,13 +22,13 @@ app.use(
 // Process application/json
 app.use(bodyParser.json());
 
-const users = [];
+app.get('/users', async (req, res) => {
+  const users = await Users.find({});
 
-app.get('/users', (req, res) => {
   return res.status(200).json(users).send();
 })
 
-app.post('/users', (req, res) => {
+app.post('/users', async (req, res) => {
   let { name, age } = req.body;
 
   if (!name || !age) {
@@ -45,21 +47,33 @@ app.post('/users', (req, res) => {
 
   name = String(name);
 
-  const id = uuid();
-  users.push({
-    id,
+  const _id = ObjectID();
+
+  const result = await Users.update({
     name,
-    age,
+  }, {
+    $setOnInsert: {
+      _id,
+      age,
+    },
+  }, {
+    upsert: true,
   });
 
-  return res
-    .status(200)
-    .json({ id })
-    .send();
+  if (result.upserted) {
+    return res
+      .status(200)
+      .json({ id: _id })
+      .send();
+  } else {
+    return res.status(400).json({
+      error: 'Duplicated user name.',
+    }).send();
+  }
 })
 
-app.delete('/users', (req, res) => {
-  users.splice(0, users.length);
+app.delete('/users', async (req, res) => {
+  const users = await Users.remove({});
 
   return res.sendStatus(204);
 })
