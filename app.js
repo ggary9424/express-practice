@@ -37,7 +37,10 @@ app.post('/login', async (req, res) => {
     return res.status(403).send();
   }
 
-  res.cookie('userID', user._id);
+  const tenSeconds = 10 * 1000;
+  res.cookie('userID', user._id, {
+    expires: new Date(Number(new Date()) + tenSeconds),
+  });
   return res.status(204).send();
 });
 
