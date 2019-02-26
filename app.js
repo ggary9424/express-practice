@@ -19,7 +19,19 @@ app.use(
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  res.status(200).send('Hello World!');
+  res.status(200).send('I am GET /');
+})
+
+app.post('/', (req, res) => {
+  res.status(200).send('I am POST /');
+})
+
+app.put('/', (req, res) => {
+  res.status(200).send('I am PUT /');
+})
+
+app.delete('/', (req, res) => {
+  res.status(200).send('I am DELETE /');
 })
 
 app.listen(app.get('port'), () => {
