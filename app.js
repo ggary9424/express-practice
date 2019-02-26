@@ -1,4 +1,6 @@
+const _ = require('lodash');
 const path = require('path');
+const uuid = require('uuid');
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -18,20 +20,48 @@ app.use(
 // Process application/json
 app.use(bodyParser.json());
 
-app.get('/', (req, res) => {
-  res.status(200).send('I am GET /');
+const users = [];
+
+app.get('/users', (req, res) => {
+  return res.status(200).json(users).send();
 })
 
-app.post('/', (req, res) => {
-  res.status(200).send('I am POST /');
+app.post('/users', (req, res) => {
+  let { name, age } = req.body;
+
+  if (!name || !age) {
+    return res.sendStatus(400);
+  }
+
+  if (_.isNaN(age)) {
+    return res.sendStatus(400);
+  }
+
+  age = Number(age);
+
+  if (!_.isInteger(age)) {
+    return res.sendStatus(400);
+  }
+
+  name = String(name);
+
+  const id = uuid();
+  users.push({
+    id,
+    name,
+    age,
+  });
+
+  return res
+    .status(200)
+    .json({ id })
+    .send();
 })
 
-app.put('/', (req, res) => {
-  res.status(200).send('I am PUT /');
-})
+app.delete('/users', (req, res) => {
+  users.splice(0, users.length);
 
-app.delete('/', (req, res) => {
-  res.status(200).send('I am DELETE /');
+  return res.sendStatus(204);
 })
 
 app.listen(app.get('port'), () => {
