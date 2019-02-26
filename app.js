@@ -2,6 +2,7 @@ const _ = require('lodash');
 const path = require('path');
 const uuid = require('uuid');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongoist');
 const { Users } = require('./collections');
@@ -11,6 +12,8 @@ const app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.set('port', 5000);
+
+app.use(cookieParser());
 
 // Process application/x-www-form-urlencoded
 app.use(
@@ -22,6 +25,36 @@ app.use(
 // Process application/json
 app.use(bodyParser.json());
 
+app.post('/login', async (req, res) => {
+  const { name, password } = req.body;
+
+  const user = await Users.findOne({
+    name,
+    password,
+  });
+
+  if (!user) {
+    return res.status(403).send();
+  }
+
+  res.cookie('userID', user._id);
+  return res.status(204).send();
+});
+
+app.get('/me', async (req, res) => {
+  const userID = req.cookies.userID;
+
+  if (!userID) {
+    return res.status(403).send();
+  }
+
+  const user = await Users.findOne({
+    _id: ObjectID(userID),
+  });
+
+  return res.status(200).json(user).send();
+});
+
 app.get('/users', async (req, res) => {
   const users = await Users.find({});
 
@@ -29,9 +62,9 @@ app.get('/users', async (req, res) => {
 })
 
 app.post('/users', async (req, res) => {
-  let { name, age } = req.body;
+  let { name, password, age } = req.body;
 
-  if (!name || !age) {
+  if (!name || !password || !age) {
     return res.sendStatus(400);
   }
 
@@ -46,6 +79,7 @@ app.post('/users', async (req, res) => {
   }
 
   name = String(name);
+  password = String(password);
 
   const _id = ObjectID();
 
@@ -54,6 +88,7 @@ app.post('/users', async (req, res) => {
   }, {
     $setOnInsert: {
       _id,
+      password,
       age,
     },
   }, {
