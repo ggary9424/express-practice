@@ -2,7 +2,7 @@ const _ = require('lodash');
 const path = require('path');
 const uuid = require('uuid');
 const express = require('express');
-const cookieParser = require('cookie-parser');
+const session = require('express-session')
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongoist');
 const { Users } = require('./collections');
@@ -13,7 +13,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.set('port', 5000);
 
-app.use(cookieParser());
+app.use(session({
+  secret: 'some_secret_key_here',
+  resave: false,
+  saveUninitialized: true,
+}))
 
 // Process application/x-www-form-urlencoded
 app.use(
@@ -38,14 +42,14 @@ app.post('/login', async (req, res) => {
   }
 
   const tenSeconds = 10 * 1000;
-  res.cookie('userID', user._id, {
-    expires: new Date(Number(new Date()) + tenSeconds),
-  });
+  req.session.userID = user._id;
+  req.session.cookie.maxAge = tenSeconds;
+
   return res.status(204).send();
 });
 
 app.get('/me', async (req, res) => {
-  const userID = req.cookies.userID;
+  const { userID } = req.session;
 
   if (!userID) {
     return res.status(403).send();
